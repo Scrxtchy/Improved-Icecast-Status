@@ -1,21 +1,20 @@
 var streamlist = {};
 var [domStreams, offlineStreamList] = [[],[]];
 
+const UpdateSeconds = 8;
 
 document.addEventListener("DOMContentLoaded", function(event) {
 	DOMStreams();
 	window.setInterval(function() {
 		updateStats();
-	}, 8000);
+	}, UpdateSeconds * 1000);
 });
 
-
-function parseStreamName(stream) {
-	return stream.replace(window.location.origin, '');
-}
-
 function handleStreamObject(stream) {
-	var streamID = parseStreamName(stream.listenurl);
+	//var streamID = stream.listenurl.replace(new RegExp(`.+${hostname}(?::\\d+)?`, 'i'), '')
+	let streamID = new URL(stream.listenurl).pathname; 
+	//Haven't looked into mount points enough to really know if a simple pathname is valid enough
+	//regexjank is doing the same kind of shit tho
 
 	streamlist[streamID] = {
 		online: true
@@ -23,7 +22,7 @@ function handleStreamObject(stream) {
 	if (streamlist[streamID].loaded === undefined) streamlist[streamID].loaded = document.getElementById('stream' + streamID) !== null;
 
 
-	var dom = document.getElementById('stream' + streamID);
+	let dom = document.getElementById('stream' + streamID);
 	if (dom === null) {
 		if (document.getElementById('newstream') === null)
 			createFooter();
@@ -31,7 +30,7 @@ function handleStreamObject(stream) {
 			document.getElementById('newstreamlist').innerHTML = document.getElementById('newstreamlist').innerHTML + stream.server_name + '';
 	} else {
 		document.getElementById('title' + streamID).innerText = stream.server_name;
-		document.getElementById('playing' + streamID).innerText = stream.artist + " - " + stream.title;
+		document.getElementById('playing' + streamID).innerText = (stream.artist !== undefined ? stream.artist + " - " + stream.title : stream.title); //unspecified version compatiblity?
 		document.getElementById('lstnCurrent' + streamID).innerText = stream.listeners;
 		document.getElementById('lstnAllT' + streamID).innerText = stream.listener_peak;
 		document.getElementById('genre' + streamID).innerText = stream.genre;
@@ -53,7 +52,7 @@ function updateStats() {
 							handleStreamObject(json.icestats.source);
 							break;
 						case "Array":
-							for(var stream of json.icestats.source){
+							for(let stream of json.icestats.source){
 								handleStreamObject(stream);
 							}
 							break;
@@ -65,27 +64,27 @@ function updateStats() {
 	}
 
 function takeStreamOffline(offlineStreams){
-	for(var stream in offlineStreams){
-		if (!document.getElementById('title' + streamlist[stream]).innerText.includes(' - OFFLINE'))
-		document.getElementById('title' + streamlist[stream]).innerText = document.getElementById('title' + streamlist[stream]).innerText + " - OFFLINE";
+	for(let stream of offlineStreams){
+		if (!document.getElementById('title' + stream).innerText.includes(' - OFFLINE'))
+		document.getElementById('title' + stream).innerText = document.getElementById('title' + stream).innerText + " - OFFLINE";
 	}
 }
 
 function createFooter() {
-	var foot = document.getElementById("footer");
-	var newstreamDIV = document.createElement("div");
+	let foot = document.getElementById("footer");
+	let newstreamDIV = document.createElement("div");
 	newstreamDIV.id = "newstream";
 	newstreamDIV.className = "roundbox";
-	var newstreamh3 = document.createElement("h3");
+	let newstreamh3 = document.createElement("h3");
 	newstreamh3.innerHTML = "New Streams Avaliable - Refresh to display";
-	var newstreamlist = document.createElement("span");
+	let newstreamlist = document.createElement("span");
 	newstreamlist.id = "newstreamlist";
 	newstreamDIV.innerHTML = newstreamh3.outerHTML + newstreamlist.outerHTML;
 	foot.outerHTML = newstreamDIV.outerHTML + foot.outerHTML;
 	}
 
 function DOMStreams(){
-	for(var node of document.getElementsByClassName('mounthead')){
+	for(let node of document.getElementsByClassName('mounthead')){
 		domStreams.push(node.parentElement.id.slice(6));
 	}
 }
